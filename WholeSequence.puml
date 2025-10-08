@@ -1,0 +1,108 @@
+@startuml
+title Sequence Diagram - Whole system
+
+actor admin
+actor teacher
+actor student
+
+participant "Frontend/UI" as FR
+participant "API gateway" as APG
+participant "Identity & access" as IA
+participant "Subjects management" as SM
+participant "Classes management" as CM
+participant "Teacher management" as TM
+participant "Student management" as SM
+participant "Enrollment management" as EM
+participant "Grading management" as GM
+participant "Audit management" as AM
+database "Database" as DB
+
+' === Login === '
+
+admin -> FR : Tries to log in
+FR -> APG: POST/login {user, pass}
+APG -> IA: verifyCredentials()
+IA --> APG: Ok + JWT
+APG --> FR: 200 + JWT
+FR --> admin: message "login successful"
+
+' === Create subject === '
+
+admin -> FR: tries to create a subject
+FR -> APG: POST/subjects {name}
+APG -> IA: hasRole(Admin)
+IA --> APG: ok
+APG -> SM: createSubject(name)
+SM -> DB: Insert subject
+DB --> SM: Success
+SM --> APG: Subject created
+APG --> FR: 201 subject
+FR --> admin: message "subject created"
+
+
+' === Create class === '
+
+admin -> FR: tries to create a class
+FR -> APG: POST/classes {payload}
+APG -> IA: hasRole(Admin)
+IA --> APG: ok
+APG -> CM: createClass(...)
+CM -> SM: GetSubject(subjectId)
+SM --> CM: Subject
+CM -> TM: GetTeacher(teacherId)
+TM --> CM: Teacher
+CM -> DB: Insert Class(...)
+DB --> CM: Success
+CM --> APG: Subject created
+APG --> FR: 201 class
+FR --> admin: message "class created"
+
+' == Student enrolls == '
+
+student -> FR: Tries to enrolls in a class
+FR -> APG: POST /enrollments {studentId, classId, timePeriod}
+APG -> IA: hasRole(student)
+IA -> APG: ok
+APG -> EM: Enroll(studentId, classId)
+EM -> SM: GetStudent(studentId)
+SM --> EM: Student
+EM -> CM: GetClass(classId)
+CM --> EM: Class
+EM -> DB: Insert Class_Term
+DB --> EM: Success
+EM --> APG: Enrollment created
+APG --> FR: 201 Enrollment
+FR --> student: message: "enrollment created"
+
+' == teacher registers a grade == '
+
+teacher -> FR: tries to register a grade
+FR -> APG: POST/grades {...}
+APG -> GM: RegisterGrade(...)
+GM -> DB: Insert Grade(...) 
+DB --> GM: Success
+GM -> DB: Insert GradeHistory(...)
+DB --> GM: Success
+GM -> APG: Grade registered
+APG -> FR: 201 Grade
+FR -> teacher: message "Grade registered"
+
+
+' == student visualizes his progress  ==='
+
+student -> FR: I want to visualized my progress
+FR -> APG: GET /progress?studentId={studentId}term?={term}
+APG -> CM: GetClasses(studentId, term)
+CM -> DB: Select * ....
+DB --> CM: Class[]
+CM --> APG: Class []
+APG -> GM: GetGrades(studentId, term)
+GM -> DB: Select * ....
+DB --> GM: Grade[]
+GM --> APG: Grade[]
+APG --> FR: Grade[] + Class[]
+FR --> student: shows list of classes and grades for a given term
+
+
+
+@enduml

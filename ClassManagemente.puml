@@ -1,0 +1,29 @@
+@startuml
+title Create class sequence diagram
+
+actor Admin
+participant "Frontend/UI" as FR
+participant "API gateway" as APG
+participant "Identity & Access" as IA
+participant "Class Catalog" as CM
+participant "Subjects Management" as SM
+participant "Teacher Management" as TM
+database "Database" as DB
+
+Admin -> FR : selects "Create class"
+FR -> APG  : POST /classes {subjectId, term, teacherId, status=OPEN, capacity}
+APG -> IA  : hasRole(Admin)
+IA  --> APG: ok
+APG -> CM  : CreateClass(...)
+CM  -> SM: GetSubject(subjectId)
+SM --> CM : Subject
+CM  -> TM  : GetTeacher(teacherId)
+TM  --> CM : Teacher
+CM -> CM : validate status == OPEN\nand capacity <= 20
+CM  -> DB : INSERT Class(subjectId, term, teacherId,\n status=OPEN)
+DB  --> CM : ok
+CM  --> APG: ClassCreated
+APG --> FR : 201 Class
+FR  --> Admin: message "class created"
+
+@enduml

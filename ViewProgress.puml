@@ -1,0 +1,26 @@
+@startuml
+title View progress
+
+actor student
+participant "Frontend/UI" as FR
+participant "API gateway" as APG
+participant "Classes management" as CM
+participant "Grading management" as GM
+database "Database" as DB
+
+FR -> APG: GET /progress?studentId={studentId}&termId={termId}
+
+APG -> CM: GetClasses(studentId, termId)
+CM -> DB: Select ClassesByStudentAndTerm(...)
+DB --> CM: Class[]
+CM --> APG: Class[]
+
+APG -> GM: GetGrades(studentId, termId)
+GM -> DB: Select GradesByStudentAndTerm(...)
+DB --> GM: Grade[]
+GM --> APG: Grade[]
+
+APG --> FR: 200 { classes: Class[], grades: Grade[] }
+FR --> student: shows progress
+
+@enduml

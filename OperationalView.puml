@@ -1,0 +1,42 @@
+@startuml
+!theme aws-orange
+title Operational View — Minimal Deployment (envs, logs/metrics, backups, secrets)
+
+skinparam shadowing false
+
+node "Observability\n(Logs + Metrics)" as OBS
+node "Secrets Manager" as SECRETS
+node "Backup Storage" as BKP
+
+rectangle "Dev" {
+  node "API + Services" as DEV_APP
+  database "Relational DB" as DEV_DB
+}
+rectangle "Staging" {
+  node "API + Services" as STG_APP
+  database "Relational DB" as STG_DB
+}
+rectangle "Prod" {
+  node "API + Services" as PRD_APP
+  database "Relational DB (HA/PITR)" as PRD_DB
+}
+
+DEV_APP --> DEV_DB
+STG_APP --> STG_DB
+PRD_APP --> PRD_DB
+
+DEV_APP --> OBS : logs/metrics
+STG_APP --> OBS : logs/metrics
+PRD_APP --> OBS : logs/metrics
+
+DEV_APP --> SECRETS : DB DSN, JWT keys
+STG_APP --> SECRETS
+PRD_APP --> SECRETS
+DEV_DB --> SECRETS : credentials
+STG_DB --> SECRETS
+PRD_DB --> SECRETS
+
+PRD_DB --> BKP : nightly backup
+BKP --> STG_DB : restore tests
+
+@enduml

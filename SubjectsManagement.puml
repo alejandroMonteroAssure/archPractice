@@ -1,0 +1,28 @@
+@startuml
+title Subjects Management
+
+actor admin
+participant "frontend" as FR
+participant "API gateway" as APG
+participant "Identity and Access" as IA
+participant "Subjects Management" as SM
+database "Database" as DB
+
+
+admin -> FR: select subject creation
+FR -> APG: POST /subjects {name}
+APG -> SM: CreateSubject(name)
+
+SM ->  DB: Insert Subject(...)
+DB -> SM: Error
+
+loop up to 3 retries on error
+ SM ->  DB: Insert Subject(...)
+end
+
+DB --> SM: Success
+SM --> APG: Subject
+APG --> FR: 200 Subject
+FR --> admin: message "Subject created succesfully"
+
+@enduml

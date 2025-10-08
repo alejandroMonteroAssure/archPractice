@@ -1,0 +1,144 @@
+@startuml
+!theme plain
+title Whole system class diagram
+
+package "domain.entities" {
+  class Student {
+    +id: int
+    +fullName: String
+    +email: String
+    +status: String
+  }
+
+  class Teacher {
+    +id: int
+    +fullName: String
+    +email: String
+  }
+
+  class Subject {
+    +id: int
+    +code: String
+    +name: String
+  }
+
+  class ClassOffering {
+    +id: int
+    +status: String
+    +capacity: int
+    +seatsAvailable(): int
+    +term: String
+    +schedule: String
+  }
+
+  class Enrollment {
+    +id: int
+    +status: String
+    +enrolledAt: DateTime
+  }
+
+  class Grade {
+    +id: int
+    +value: int
+    +reason: String
+    +gradedAt: DateTime
+    +version: int
+  }
+}
+
+package "domain.interfaces" {
+  interface IStudentService {
+    +findById(id: int): Student?
+    +findByEmail(email: String): Student?
+    +save(s: Student): void
+    +update(s: Student): void
+  }
+
+  interface ISubjectService {
+    +findById(id: int): Subject?
+    +findByCode(id: int): Subject?
+    +save(s: Subject): void
+  }
+
+  interface IEnrollmentService {
+    +findById(id: int): Enrollment?
+    +findActive(studentId: int, classId: int): Enrollment?
+    +save(e: Enrollment): void
+    +update(e: Enrollment): void
+  }
+
+  interface IGradeService {
+    +findByEnrollmentId(enrollmentId: int): Grade?
+    +save(g: Grade): void
+    +update(g: Grade): void
+  }
+}
+
+package "application" {
+  class StudentManagement {
+    +createStudent(...)
+    +getStudent(id: int): Student?
+  }
+
+  class SubjectManagement {
+    +createSubject(code: String, name: String): Subject
+    +getSubject(id: int): Subject?
+  }
+
+  class EnrollmentManagement {
+    +enroll(studentId: int, classId: int): Enrollment
+    +getEnrollment(id: int): Enrollment?
+  }
+
+  class GradingManagement {
+    +registerGrade(enrollmentId: int, value: int, reason: String, gradedBy: int): Grade
+    +getGradeByEnrollment(enrollmentId: int): Grade?
+  }
+}
+
+package "infrastructure" {
+  class StudentServiceImplementation {
+     studentRepository: IStudentService
+  }
+
+  class SubjectServiceImplementation {
+     subjectRepository: ISubjectService
+  }
+
+  class EnrollmentServiceImplementation {
+     enrollmentRepository: IEnrollmentService
+  }
+
+  class GradeServiceImplementation {
+     gradeRepository: IGradeService
+  }
+}
+
+StudentManagement ..> IStudentService
+IStudentService ..> Student
+StudentServiceImplementation ..|> IStudentService
+StudentServiceImplementation ..> Student
+
+SubjectManagement ..> ISubjectService
+ISubjectService ..> Subject
+SubjectServiceImplementation ..|> ISubjectService
+SubjectServiceImplementation ..> Subject
+
+EnrollmentManagement ..> IEnrollmentService
+IEnrollmentService ..> Enrollment
+EnrollmentServiceImplementation ..|> IEnrollmentService
+EnrollmentServiceImplementation ..> Enrollment
+
+GradingManagement ..> IGradeService
+IGradeService ..> Grade
+GradeServiceImplementation ..|> IGradeService
+GradeServiceImplementation ..> Grade
+
+Subject "1" o-- "0..*" ClassOffering : offers
+Teacher "1" -- "0..*" ClassOffering : teaches >
+ClassOffering "1" *-- "0..*" Enrollment : enrollments >
+Student "1" -- "0..*" Enrollment : is enrolled in >
+Enrollment "1" *-- "0..*" Grade : grades >
+Teacher "1" -- "0..*" Grade : gradedBy >
+
+@enduml

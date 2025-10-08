@@ -1,0 +1,33 @@
+@startuml
+title Enrollment
+
+actor Student
+participant "Frontend/UI" as FR
+participant "API gateway" as APG
+participant "Identity & Access" as IA
+participant "Enrollment Management" as EM
+participant "Student Management" as SM
+participant "Class Catalog" as CM
+database "Database" as DB
+
+Student -> FR : selects "Enroll in class"
+FR -> APG : POST /enrollments {studentId, classId, termId}
+APG -> IA  : hasRole(Student)
+IA  --> APG: ok
+APG -> EM  : Enroll(studentId, classId, termId)
+EM -> SM: GetStudent(studentId)
+SM --> EM: Student
+EM -> CM  : GetClass(classId, termId)
+CM --> EM : Class
+
+EM -> EM : ensure that status = OPEN & seatsAvailable>0
+
+
+group Transaction
+  EM -> DB : INSERT Enrollment(...)
+  EM -> DB : UPDATE Class(seatsAvailable - 1)
+end
+
+EM --> APG : EnrollmentCreated
+APG --> FR : 201 Enrollment
+FR  --> Student : message "enrollment created"

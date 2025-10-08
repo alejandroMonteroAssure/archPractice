@@ -1,0 +1,65 @@
+Testing Strategy
+
+Estructúralo por niveles y alinea con tus NFRs (transacciones, reglas 0..100, asientos, roles).
+
+1) Unit tests (rápidos, sin DB)
+
+Dominio/Reglas:
+
+GradeValue en [0..100], incremento de version en update, creación de GradeAuditEntry.
+
+ClassOffering.canAcceptEnrollment(); Capacity ≤ 20; seatsAvailable decrementa/incrementa.
+
+EnrollmentEligibilitySpec: OPEN ∧ seats>0 ∧ no active enrollment previo.
+
+Servicios de dominio:
+
+GradingDomainService.record/update genera auditoría correcta.
+
+EnrollmentDomainService.enroll aplica política de asientos.
+
+2) Contract/API tests
+
+Contratos de los endpoints de Grading:
+
+POST /grades 201 con payload válido; 400 fuera de rango; 404 enrollment inexistente.
+
+PUT /grades/{id} incrementa versión y persiste audit.
+
+Validación de roles: 403 para roles no autorizados.
+
+3) Integration tests (con DB real o testcontainer)
+
+Transacciones:
+
+Enroll: INSERT enrollment + UPDATE seats se aplican juntos; ante fallo, no hay efectos parciales.
+
+Grade: INSERT grade + INSERT audit juntos.
+
+FK/constraints reales: subject/teacher/class/enrollment referencial.
+
+4) End-to-end (opcionales, pocos casos felices)
+
+Flujo completo: login → create subject → create class → enroll → record grade → view progress.
+
+5) Performance tests (ligeros pero claros)
+
+Throughput/latencia para endpoints calientes:
+
+POST /enrollments y POST /grades: metas p95 (p. ej., < 200 ms en Staging con N req/s).
+
+Carga concurrente: 50–100 usuarios simulados en horas pico.
+
+Regresión: medir antes/después de cambios clave.
+
+6) Observability-driven tests
+
+Verificar que cada petición emite request-id, user-id, rol, status, duración.
+
+Verificar métricas personalizadas aumentan como se espera tras una prueba (e.g., grades_written_total).
+
+7) Plan de datos de prueba
+
+Fixtures: 2 subjects, 2 teachers, 3 students, 3 classes (una OPEN con capacity=2, otra CLOSED).
+
+Casos: 2 enrollments activos, 1 cancelado; 1 grade creado, 1 grade actualizado (version=2).

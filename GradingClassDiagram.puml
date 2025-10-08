@@ -1,0 +1,68 @@
+@startuml
+!theme plain
+title Grading module — class diagram
+
+package "domain.entities" {
+  class Grade {
+    +id: int
+    +enrollmentId: int
+    +value: int
+    +reason: String
+    +gradedAt: DateTime
+    +gradedBy: int
+    +version: int
+  }
+
+  class GradeAuditEntry {
+    +id: int
+    +gradeId: int
+    +changedAt: DateTime
+    +changedBy: int
+    +oldValue: int?
+    +newValue: int
+    +reason: String
+    +newVersion: int
+  }
+
+  class Enrollment {
+    +id: int
+    +status: String
+  }
+
+  class Teacher {
+    +id: int
+    +fullName: String
+  }
+}
+
+package "domain.interfaces" {
+  interface IGradeService {
+    +findByEnrollmentId(enrollmentId: int): Grade?
+    +save(g: Grade): void
+    +update(g: Grade): void
+  }
+}
+
+package "application" {
+  class GradingManagement {
+    +registerGrade(enrollmentId: int, value: int, reason: String, gradedBy: int): Grade
+    +getGradeByEnrollment(enrollmentId: int): Grade?
+  }
+}
+
+package "infrastructure" {
+  class GradeServiceImplementation {
+     gradeRepository: IGradeService
+  }
+}
+
+GradingManagement ..> IGradeService
+IGradeService ..> Grade
+GradeServiceImplementation ..|> IGradeService
+GradeServiceImplementation ..> Grade
+
+Enrollment "1" -- "0..1" Grade
+Grade "1" *-- "0..*" GradeAuditEntry
+Teacher "1" -- "0..*" Grade : gradedBy >
+
+@enduml

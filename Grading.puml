@@ -1,0 +1,41 @@
+@startuml
+title Grading
+
+actor teacher
+participant "Frontend/UI" as FR
+participant "API gateway" as APG
+participant "Identity & Access" as IA
+participant "Grading management" as GM
+participant "Enrollment management" as EM
+database "Database" as DB
+
+teacher -> FR: tries to register a grade
+FR -> APG: POST/grades {enrollmentId, value, reason}
+APG -> IA: hasRole(Teacher)
+IA --> APG: ok
+APG -> IA: getUserId()
+IA --> APG: teacherId
+
+APG -> GM: RegisterGrade(enrollmentId, value, reason, teacherId)
+
+GM -> EM: GetEnrollment(enrollmentId)
+EM --> GM: Enrollment
+
+
+GM -> GM: validate [0..100]
+
+loop up to 3 retries on timeout or transient error
+  GM -> DB: Insert Grade(enrollmentId, value, graded_by=teacherId, version)
+  DB --> GM: Success
+end
+
+loop up to 3 retries on timeout or transient error
+  GM -> DB: Insert GradeHistory(gradeId, oldValue?, newValue=value, reason, newVersion, changedBy=teacherId)
+  DB --> GM: Success
+end
+
+GM --> APG: Grade registered
+APG --> FR: 201 Grade
+FR --> teacher: message "Grade registered"
+
+@enduml
